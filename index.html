@@ -4,19 +4,57 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>SBDStudio</title>
-    <link rel="stylesheet" href="/public/style.css" />
+    <link rel="stylesheet" href="style.css" />
 </head>
 <body>
-    <header class="app-header">
-        <div class="profile-section">
-            <img src="public/img/avatar.png" alt="Profile" class="profile-avatar">
-        </div>
-        <button class="create-button">＋ Create</button>
-    </header>
+    <div id="home-view">
+      <header class="app-header">
+          <div class="profile-section">
+              <img src="img/avatar.png" alt="Profile" class="profile-avatar">
+          </div>
+          <button class="create-button">＋ Create</button>
+      </header>
 
-    <main id="boardList" class="board-grid">
-      <div class="board-thumbnail" style="background-image: url('${board.thumbnail}')"></div>
-    </main>
+      <main id="boardList" class="board-grid">
+        <div class="board-thumbnail" style="background-image: url('${board.thumbnail}')"></div>
+      </main>
+    </div>
+
+    <div id="board-view" style="display: none;">
+            <!-- Header -->
+      <header class="board-header">
+        <div class="filename-wrapper">
+          <span contenteditable="true" id="board-title">Untitled Board</span>
+          <button id="rename-btn" title="Click to edit">✏️</button>
+        </div>
+      </header>
+
+      <!-- Mode Tabs -->
+      <nav class="mode-tabs">
+        <button class="tab-button active" data-mode="board">🧩 Board Mode</button>
+        <button class="tab-button" data-mode="timeline">🕒 Timeline Mode</button>
+      </nav>
+
+      <!-- Canvas -->
+      <main id="canvas">
+        <!-- Dynamic content rendered here -->
+      </main>
+
+      <!-- Bottom Controls -->
+      <footer class="bottom-toolbar" id="board-controls">
+        <button id="addNoteBtn">＋ Add Sticky</button>
+        <button id="addLabelBtn">🏷️ Add Label</button>
+        <button>👤 Create Persona</button>
+      </footer>
+
+      <footer class="bottom-toolbar" id="timeline-controls" style="display: none;">
+        <button>📄 Generate Scenario</button>
+        <button>🔗 Export Timeline</button>
+      </footer>
+    </div>
+    <script type="module" src="spa.js"></script>
+
+    <!---
     <script>
       fetch("/api/boards")
         .then(res => res.json())
@@ -55,7 +93,7 @@
             list.appendChild(card);
           });
         });
-    </script>
+    </script>-->
     
 </body>
 </html>
