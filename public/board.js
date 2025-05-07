@@ -409,4 +409,25 @@ addLabelBtn.addEventListener("click", () => {
   saveBoardToServer();
 });
 
+// Inside board.js
+function initializeBoard(data, id) {
+  // Set global data
+  window.boardData = data;
+  window.boardId = id;
+
+  // Setup title
+  titleEl.textContent = data.title || "Untitled Board";
+  pageTitle.textContent = data.title || "Untitled Board";
+
+  // Render board
+  clearBoard();
+  data.notes?.forEach(n => createNote(n));
+  data.labels?.forEach(l => createLabel(l));
+
+  // Setup event listeners (lasso, rename, etc.)
+  setupBoardEvents(); 
+}
+
+window.initializeBoard = initializeBoard;
+
 

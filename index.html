@@ -4,19 +4,19 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>SBDStudio</title>
-    <link rel="stylesheet" href="public/style.css" />
+    <link rel="stylesheet" href="/style.css" />
 </head>
 <body>
     <div id="home-view">
       <header class="app-header">
           <div class="profile-section">
-              <img src="public/img/avatar.png" alt="Profile" class="profile-avatar">
+              <img src="/img/avatar.png" alt="Profile" class="profile-avatar">
           </div>
           <button class="create-button">＋ Create</button>
       </header>
 
       <main id="boardList" class="board-grid">
-        <div class="board-thumbnail" style="background-image: url('${board.thumbnail}')"></div>
+        
       </main>
     </div>
 
@@ -52,48 +52,7 @@
         <button>🔗 Export Timeline</button>
       </footer>
     </div>
-    <script type="module" src="spa.js"></script>
-
-    <!---
-    <script>
-      fetch("/api/boards")
-        .then(res => res.json())
-        .then(data => {
-          const list = document.getElementById("boardList");
-          list.innerHTML = "";
-          if (data.length === 0) {
-            list.innerHTML = "<p style='padding: 32px;'>No boards yet. Click ＋ Create to begin.</p>";
-            return;
-          }
-          data.forEach(board => {
-            const card = document.createElement("div");
-            card.className = "board-card";
-
-            const link = document.createElement("a");
-            link.href = `board.html?id=${board.id}`;
-            link.innerHTML = `
-              <div class="board-title">${board.title}</div>
-              <div class="board-meta">${new Date(board.updated).toLocaleString()}</div>
-            `;
-
-            const deleteBtn = document.createElement("button");
-            deleteBtn.textContent = "🗑️";
-            deleteBtn.className = "delete-btn";
-            deleteBtn.addEventListener("click", (e) => {
-              e.stopPropagation();
-              e.preventDefault();
-              if (confirm(`Delete board "${board.title}"?`)) {
-                fetch(`/api/boards/${board.id}`, { method: "DELETE" })
-                  .then(() => location.reload());
-              }
-            });
-
-            card.appendChild(link);
-            card.appendChild(deleteBtn);
-            list.appendChild(card);
-          });
-        });
-    </script>-->
+    <script type="module" src="/spa.js"></script>
     
 </body>
 </html>

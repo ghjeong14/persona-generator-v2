@@ -1,488 +1,80 @@
-const tabs = document.querySelectorAll(".tab-button");
-const boardControls = document.getElementById("board-controls");
-const timelineControls = document.getElementById("timeline-controls");
-const addLabelBtn = document.getElementById("addLabelBtn");
-const addNoteBtn = document.getElementById("addNoteBtn");
+// === SPA Routing & State ===
+let boardData = null;
+let boardId = null;
 
-// Rename logic
-const titleEl = document.getElementById("board-title");
-const renameBtn = document.getElementById("rename-btn");
-const pageTitle = document.getElementById("page-title");
+document.addEventListener("DOMContentLoaded", () => {
+  routeFromHash();
+});
 
-// ----------------------
-// Sticky Note Creation
-// ----------------------
-let noteId = 0;
-const board = document.getElementById("canvas");
-const selected = new Set();
+window.addEventListener("hashchange", routeFromHash);
 
-// Saving boards
-function saveBoardToServer() {
-  const boardId = new URLSearchParams(window.location.search).get("id");
-  fetch(`/api/boards/${boardId}`, {
+function routeFromHash() {
+  const id = location.hash.replace("#id=", "");
+  if (id) navigateToBoard(id);
+  else renderHomepage();
+}
+
+// === Homepage Rendering ===
+function renderHomepage() {
+  document.getElementById("home-view").style.display = "block";
+  document.getElementById("board-view").style.display = "none";
+
+  const listContainer = document.getElementById("board-list");
+  listContainer.innerHTML = "";
+
+  fetch("/api/boards")
+    .then(res => res.json())
+    .then(boards => {
+      boards.forEach(board => {
+        const card = document.createElement("div");
+        card.className = "board-card";
+        card.innerHTML = `
+          <div class="card-title">${board.title}</div>
+          <div class="card-date">${new Date(board.updated).toLocaleString()}</div>
+        `;
+        card.addEventListener("click", () => {
+          location.hash = `#id=${board.id}`;
+        });
+        listContainer.appendChild(card);
+      });
+    });
+}
+
+// === Create New Board ===
+document.querySelector(".create-button")?.addEventListener("click", async () => {
+  const id = Date.now().toString();
+  const newBoard = {
+    id,
+    title: "Untitled Board",
+    notes: [],
+    labels: [],
+    updated: new Date().toISOString(),
+  };
+
+  await fetch(`/api/boards/${id}`, {
     method: "PUT",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(getBoardState())
+    body: JSON.stringify(newBoard),
   });
-}
 
-
-function getBoardState() {
-  return {
-    notes: Array.from(document.querySelectorAll(".note")).map(note => ({
-      id: note.dataset.id,
-      x: parseFloat(note.style.left),
-      y: parseFloat(note.style.top),
-      content: note.querySelector(".content")?.innerText || note.innerText,
-    })),
-    labels: Array.from(document.querySelectorAll(".group-label")).map(label => ({
-      x: parseFloat(label.style.left),
-      y: parseFloat(label.style.top),
-      text: label.innerText,
-      linkedNoteIds: label.dataset.linkedNotes || "",
-    })),
-    title: document.getElementById("board-title")?.innerText || "Untitled Board"
-  };
-}
-
-
-
-// Mode switch logic
-tabs.forEach(btn => {
-  btn.addEventListener("click", () => {
-    tabs.forEach(b => b.classList.remove("active"));
-    btn.classList.add("active");
-
-    const mode = btn.dataset.mode;
-    boardControls.style.display = mode === "board" ? "flex" : "none";
-    timelineControls.style.display = mode === "timeline" ? "flex" : "none";
-  });
+  location.hash = `#id=${id}`;
 });
 
-  
-// ========== Delete Group with Backspace ==========
-document.addEventListener("keydown", (e) => {
-    const isMac = navigator.platform.toUpperCase().indexOf("MAC") >= 0;
-    const isDeleteGroup = e.key === "Backspace" && (isMac ? e.metaKey : e.ctrlKey);
-    if (isDeleteGroup) {
-      document.querySelectorAll(".note-group").forEach(group => {
-        if (group.contains(document.activeElement)) {
-          const notes = group.querySelectorAll(".note");
-          notes.forEach(note => board.appendChild(note));
-          group.remove();
-          saveBoardToServer();
-        }
-      });
-    }
-    // Delete selected notes with Backspace (no modifier keys)
-    if (e.key === "Backspace" && !e.metaKey && !e.ctrlKey && !e.altKey) {
-      selected.forEach(el => {
-        if (el.classList.contains("group-label")) {
-          // Remove linked notes too
-          const linked = (el.dataset.linkedNotes || "").split(",")
-            .map(id => document.querySelector(`.note[data-id="${id}"]`));
-          linked.forEach(n => n?.remove());
-          el.remove();
-        } else {
-          el.remove();
-        }
-      });      
-        selected.clear();
-        saveBoardToServer();
-      }
-});
+// === Board View Rendering ===
+async function navigateToBoard(id) {
+  const res = await fetch(`/api/boards/${id}`);
+  const data = await res.json();
 
-fetch("/api/boards")
-        .then(res => res.json())
-        .then(data => {
-          const list = document.getElementById("boardList");
-          list.innerHTML = "";
-          if (data.length === 0) {
-            list.innerHTML = "<p style='padding: 32px;'>No boards yet. Click ＋ Create to begin.</p>";
-            return;
-          }
-          data.forEach(board => {
-            const card = document.createElement("div");
-            card.className = "board-card";
+  boardData = data;
+  boardId = id;
 
-            const link = document.createElement("a");
-            link.href = `board.html?id=${board.id}`;
-            link.innerHTML = `
-              <div class="board-title">${board.title}</div>
-              <div class="board-meta">${new Date(board.updated).toLocaleString()}</div>
-            `;
+  document.getElementById("home-view").style.display = "none";
+  document.getElementById("board-view").style.display = "block";
 
-            const deleteBtn = document.createElement("button");
-            deleteBtn.textContent = "🗑️";
-            deleteBtn.className = "delete-btn";
-            deleteBtn.addEventListener("click", (e) => {
-              e.stopPropagation();
-              e.preventDefault();
-              if (confirm(`Delete board "${board.title}"?`)) {
-                fetch(`/api/boards/${board.id}`, { method: "DELETE" })
-                  .then(() => location.reload());
-              }
-            });
-
-            card.appendChild(link);
-            card.appendChild(deleteBtn);
-            list.appendChild(card);
-          });
-        });
-  
-// ========== Lasso Selection ==========
-let lassoBox = null;
-let lassoStart = null;
-  
-board.addEventListener("mousedown", (e) => {
-    if (e.target !== board) return;
-  
-    clearSelection();
-    const boardRect = board.getBoundingClientRect();
-    lassoStart = {
-      x: e.clientX - boardRect.left,
-      y: e.clientY - boardRect.top
-    };
-
-  
-    lassoBox = document.createElement("div");
-    lassoBox.className = "lasso-box";
-    lassoBox.style.left = `${lassoStart.x}px`;
-    lassoBox.style.top = `${lassoStart.y}px`;
-    board.appendChild(lassoBox);
-  
-    const onMove = (ev) => {
-      const x = ev.clientX - boardRect.left;
-      const y = ev.clientY - boardRect.top;
-      const width = Math.abs(x - lassoStart.x);
-      const height = Math.abs(y - lassoStart.y);
-      lassoBox.style.width = `${width}px`;
-      lassoBox.style.height = `${height}px`;
-      lassoBox.style.left = `${Math.min(x, lassoStart.x)}px`;
-      lassoBox.style.top = `${Math.min(y, lassoStart.y)}px`;
-  
-      document.querySelectorAll(".note").forEach(note => {
-        const rect = note.getBoundingClientRect();
-        const boardRect = board.getBoundingClientRect();
-        const noteX = rect.left - boardRect.left;
-        const noteY = rect.top - boardRect.top;
-        const noteW = rect.width;
-        const noteH = rect.height;
-  
-        const withinX = noteX + noteW > Math.min(x, lassoStart.x) && noteX < Math.max(x, lassoStart.x);
-        const withinY = noteY + noteH > Math.min(y, lassoStart.y) && noteY < Math.max(y, lassoStart.y);
-  
-        if (withinX && withinY) {
-          note.classList.add("selected");
-          selected.add(note);
-        } else {
-          note.classList.remove("selected");
-          selected.delete(note);
-        }
-      });
-    };
-  
-    const onUp = () => {
-      lassoBox.remove();
-      lassoBox = null;
-      board.removeEventListener("mousemove", onMove);
-      board.removeEventListener("mouseup", onUp);
-    };
-  
-    board.addEventListener("mousemove", onMove);
-    board.addEventListener("mouseup", onUp);
-});  
-
-// Start non-editable
-titleEl.contentEditable = "false";
-
-// Enable editing on button click
-renameBtn.addEventListener("click", () => {
-  titleEl.contentEditable = "true";
-  titleEl.focus();
-
-  // Move cursor to end
-  document.execCommand("selectAll", false, null);
-  document.getSelection().collapseToEnd();
-});
-
-
-// Disable editing on Enter or blur
-titleEl.addEventListener("keydown", (e) => {
-  if (e.key === "Enter") {
-    e.preventDefault();
-    titleEl.blur();
+  // Pass control to board.js
+  if (typeof window.initializeBoard === "function") {
+    window.initializeBoard(data, id);
+  } else {
+    console.error("Board module not loaded or initializeBoard missing.");
   }
-});
-
-titleEl.addEventListener("blur", () => {
-  titleEl.contentEditable = "false";
-  pageTitle.textContent = titleEl.textContent.trim() || "Untitled Board";
-  saveBoardToServer();
-});
-
-function clearSelection() {
-    selected.forEach(el => el.classList.remove("selected"));
-    selected.clear();
 }
-
-function createNote({ x = 150, y = 150, text = "" } = {}) {
-  const note = document.createElement("div");
-  note.className = "note";
-  note.style.left = `${x}px`;
-  note.style.top = `${y}px`;
-  note.dataset.id = noteId++;
-
-  const content = document.createElement("div");
-  content.className = "noteContent";
-  content.textContent = text;
-  note.appendChild(content);
-
-  note.addEventListener("mouseup", saveBoardToServer); // after drag
-  content.addEventListener("blur", () => {
-    content.contentEditable = "false";
-    saveBoardToServer();
-  });  
-
-
-  board.appendChild(note);
-
-  note.addEventListener("mousedown", (e) => {
-    if (e.detail === 2) return;
-    if (!selected.has(note) && !e.shiftKey) clearSelection();
-    if (e.shiftKey && selected.has(note)) {
-      note.classList.remove("selected");
-      selected.delete(note);
-    } else {
-      note.classList.add("selected");
-      selected.add(note);
-    }
-
-    const startX = e.clientX;
-    const startY = e.clientY;
-    const origin = Array.from(selected).map((n) => ({
-      el: n,
-      left: parseFloat(n.style.left),
-      top: parseFloat(n.style.top),
-    }));
-
-    const move = (ev) => {
-      const dx = ev.clientX - startX;
-      const dy = ev.clientY - startY;
-      origin.forEach((o) => {
-        o.el.style.left = `${o.left + dx}px`;
-        o.el.style.top = `${o.top + dy}px`;
-      });
-    };
-
-    const up = () => {
-      document.removeEventListener("mousemove", move);
-      document.removeEventListener("mouseup", up);
-    };
-
-    document.addEventListener("mousemove", move);
-    document.addEventListener("mouseup", up);
-  });
-
-  note.addEventListener("dblclick", () => {
-    clearSelection();
-    content.contentEditable = "true";
-    content.focus();
-    note.classList.add("editing");
-  });
-
-  content.addEventListener("blur", () => {
-    content.contentEditable = "false";
-    note.classList.remove("editing");
-    saveBoardToServer();
-  });
-
-  note.dataset.id = crypto.randomUUID(); // or your own generator
-}
-
-if (addNoteBtn) {
-  addNoteBtn.addEventListener("click", () => {
-    createNote({
-      x: Math.random() * (board.clientWidth - 220) + 20,
-      y: Math.random() * (board.clientHeight - 160) + 20,
-    });
-  });
-}
-
-function setBoardState(state) {
-    clearBoard();
-    titleEl.textContent = state.title || "Untitled Board";
-    document.title = state.title || "Untitled Board";
-    state.notes.forEach(data => createNote(data));
-    if (state.labels) {
-      state.labels.forEach(data => createLabel(data));
-    }   
-}
-  
-function clearBoard() {
-    document.querySelectorAll(".note").forEach(n => n.remove());
-    selected.clear();
-}
-  
-// Load board on startup
-const boardId = new URLSearchParams(window.location.search).get("id");
-
-fetch(`/api/boards/${boardId}`)
-.then(res => res.json())
-.then(data => setBoardState(data))
-.catch(() => console.warn("Board not found"));
-  
-
-document.addEventListener("keydown", (e) => {
-    const isMac = navigator.platform.toUpperCase().indexOf('MAC') >= 0;
-    const isUngroup = (isMac && e.metaKey && e.key === "Backspace") ||
-                      (!isMac && e.ctrlKey && e.key === "Backspace");
-  
-    if (isUngroup) {
-      const groups = document.querySelectorAll(".note-group");
-      groups.forEach(group => {
-        const notes = group.querySelectorAll(".note");
-        notes.forEach(note => board.appendChild(note));
-        group.remove();
-      });
-      saveBoardToServer();
-    }
-});
-
-function createLabel({ x, y, text, linkedNoteIds }) {
-  const label = document.createElement("div");
-  label.className = "group-label";
-  label.textContent = text;
-  label.setAttribute("tabindex", "0");
-  label.style.position = "absolute";
-  label.style.left = `${x}px`;
-  label.style.top = `${y}px`;
-  label.dataset.linkedNotes = linkedNoteIds;
-
-  label.contentEditable = false;
-
-  label.addEventListener("dblclick", () => {
-    label.contentEditable = true;
-    label.focus();
-  });
-
-  label.addEventListener("blur", () => {
-    label.contentEditable = false;
-    saveBoardToServer();
-  });
-
-  label.addEventListener("mousedown", (e) => {
-    if (!e.shiftKey) clearSelection();
-    label.classList.add("selected");
-    selected.add(label);
-  
-    const startX = e.clientX;
-    const startY = e.clientY;
-    const labelStartX = parseFloat(label.style.left);
-    const labelStartY = parseFloat(label.style.top);
-  
-    const linkedNoteIds = (label.dataset.linkedNotes || "").split(",");
-    const linkedNotes = linkedNoteIds
-      .map(id => document.querySelector(`.note[data-id="${id}"]`))
-      .filter(n => n !== null);  // ✅ prevent null
-  
-    if (linkedNotes.length === 0) return;  // 💡 optionally skip drag if no notes found
-  
-    const noteStartPositions = linkedNotes.map(n => ({
-      el: n,
-      x: parseFloat(n.style.left),
-      y: parseFloat(n.style.top),
-    }));
-  
-    const onMove = (ev) => {
-      const dx = ev.clientX - startX;
-      const dy = ev.clientY - startY;
-      label.style.left = `${labelStartX + dx}px`;
-      label.style.top = `${labelStartY + dy}px`;
-      noteStartPositions.forEach(({ el, x, y }) => {
-        el.style.left = `${x + dx}px`;
-        el.style.top = `${y + dy}px`;
-      });
-    };
-  
-    const onUp = () => {
-      document.removeEventListener("mousemove", onMove);
-      document.removeEventListener("mouseup", onUp);
-    };
-  
-    document.addEventListener("mousemove", onMove);
-    document.addEventListener("mouseup", onUp);
-  });  
-
-  board.appendChild(label);
-  return label;
-}
-
-addLabelBtn.addEventListener("click", () => {
-  if (selected.size < 1) return alert("Select at least one sticky note");
-
-  const notes = Array.from(selected).filter(el => el.classList.contains("note"));
-
-  let minX = Infinity, minY = Infinity, maxX = -Infinity;
-  notes.forEach(note => {
-    const x = parseFloat(note.style.left);
-    const y = parseFloat(note.style.top);
-    const width = note.offsetWidth;
-    minX = Math.min(minX, x);
-    minY = Math.min(minY, y);
-    maxX = Math.max(maxX, x + width);
-  });
-
-  const label = createLabel({
-    x: (minX + maxX) / 2 - 60,
-    y: minY - 40,
-    text: "New Label",
-    linkedNoteIds: notes.map(n => n.dataset.id).join(",")
-  });
-
-  label.contentEditable = true;
-  label.focus();
-  saveBoardToServer();
-});
-
-function navigateToBoard(id) {
-    document.getElementById("home-view").style.display = "none";
-    document.getElementById("board-view").style.display = "block";
-  
-    fetch(`/api/boards/${id}`)
-      .then(res => res.json())
-      .then(data => {
-        document.title = data.title || "Untitled Board";
-        setBoardState(data); // from board.js
-      });
-  }
-  
-  window.addEventListener("hashchange", () => {
-    const id = location.hash.replace("#id=", "");
-    if (id) navigateToBoard(id);
-  });
-  
-  // Home setup
-  function renderHomepage() {
-    document.getElementById("home-view").style.display = "block";
-    document.getElementById("board-view").style.display = "none";
-  
-    // fetch and render board cards...
-  }
-
-  if (!location.hash) {
-    renderHomepage();
-  }  
-  
-  document.querySelector(".create-button").addEventListener("click", () => {
-    fetch("/api/boards", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ title: "Untitled Board" })
-    })
-      .then(res => res.json())
-      .then(board => {
-        location.hash = `#id=${board.id}`;  // triggers hashchange
-      });
-  });
-  

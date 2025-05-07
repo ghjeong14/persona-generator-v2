@@ -62,7 +62,7 @@ app.delete("/api/boards/:id", (req, res) => {
 });
   
 // Serve static files from root directory
-app.use(express.static(path.join(__dirname)));
+app.use(express.static(path.join(__dirname, "public")));
 
 // Route "/" to index.html
 app.get("/", (req, res) => {
