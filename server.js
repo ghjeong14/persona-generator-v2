@@ -61,7 +61,13 @@ app.delete("/api/boards/:id", (req, res) => {
     res.sendStatus(204);
 });
   
+// Serve static files from root directory
+app.use(express.static(path.join(__dirname)));
 
-app.use(express.static(path.join(__dirname, 'public')));
+// Route "/" to index.html
+app.get("/", (req, res) => {
+  res.sendFile(path.join(__dirname, "index.html"));
+});
 
 app.listen(3000, () => console.log("Server running on http://localhost:3000"));
+
