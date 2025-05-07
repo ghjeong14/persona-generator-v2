@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title id="page-title">Untitled Board</title>
+    <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+    <!-- Header -->
+  <header class="board-header">
+    <div class="filename-wrapper">
+      <span contenteditable="true" id="board-title">Untitled Board</span>
+      <button id="rename-btn" title="Click to edit">✏️</button>
+    </div>
+  </header>
+
+  <!-- Mode Tabs -->
+  <nav class="mode-tabs">
+    <button class="tab-button active" data-mode="board">🧩 Board Mode</button>
+    <button class="tab-button" data-mode="timeline">🕒 Timeline Mode</button>
+  </nav>
+
+  <!-- Canvas -->
+  <main id="canvas">
+    <!-- Dynamic content rendered here -->
+  </main>
+
+  <!-- Bottom Controls -->
+  <footer class="bottom-toolbar" id="board-controls">
+    <button id="addNoteBtn">＋ Add Sticky</button>
+    <button id="addLabelBtn">🏷️ Add Label</button>
+    <button>👤 Create Persona</button>
+  </footer>
+
+  <footer class="bottom-toolbar" id="timeline-controls" style="display: none;">
+    <button>📄 Generate Scenario</button>
+    <button>🔗 Export Timeline</button>
+  </footer>
+
+  <script src="board.js"></script>
+</body>
+</html>
