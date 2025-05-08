@@ -60,7 +60,17 @@ app.delete("/api/boards/:id", (req, res) => {
   
     res.sendStatus(204);
 });
-  
+
+// Get a specific board
+app.get("/api/boards/:id", (req, res) => {
+    const file = path.join(boardsDir, `${req.params.id}.json`);
+    if (!fs.existsSync(file)) {
+      return res.status(404).send("Board not found");
+    }
+    const json = fs.readFileSync(file, "utf-8");
+    res.json(JSON.parse(json));
+  });  
+
 // Serve static files from root directory
 app.use(express.static(path.join(__dirname, "public")));
 

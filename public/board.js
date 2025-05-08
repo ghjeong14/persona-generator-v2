@@ -18,7 +18,7 @@ const selected = new Set();
 
 // Saving boards
 function saveBoardToServer() {
-  const boardId = new URLSearchParams(window.location.search).get("id");
+  const boardId = location.hash.replace("#id=", "");
   fetch(`/api/boards/${boardId}`, {
     method: "PUT",
     headers: { "Content-Type": "application/json" },
@@ -288,13 +288,13 @@ function clearBoard() {
     selected.clear();
 }
   
-// Load board on startup
-const boardId = new URLSearchParams(window.location.search).get("id");
+// // Load board on startup
+// const boardId = location.hash.replace("#id=", "");
 
-fetch(`/api/boards/${boardId}`)
-.then(res => res.json())
-.then(data => setBoardState(data))
-.catch(() => console.warn("Board not found"));
+// fetch(`/api/boards/${boardId}`)
+// .then(res => res.json())
+// .then(data => setBoardState(data))
+// .catch(() => console.warn("Board not found"));
   
 
 document.addEventListener("keydown", (e) => {

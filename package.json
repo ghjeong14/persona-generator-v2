@@ -20,5 +20,9 @@
   "homepage": "https://github.com/ghjeong14/persona-generator-v2#readme",
   "dependencies": {
     "express": "^5.1.0"
+  },
+  "devDependencies": {
+    "nodaemon": "^0.0.5",
+    "nodemon": "^3.1.10"
   }
 }

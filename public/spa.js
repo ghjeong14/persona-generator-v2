@@ -3,10 +3,14 @@ let boardData = null;
 let boardId = null;
 
 document.addEventListener("DOMContentLoaded", () => {
+  console.log("DOM fully loaded");
   routeFromHash();
 });
 
-window.addEventListener("hashchange", routeFromHash);
+window.addEventListener("hashchange", () => {
+  console.log("Hash changed:", location.hash); // ← Add this
+  routeFromHash();
+});
 
 function routeFromHash() {
   const id = location.hash.replace("#id=", "");
@@ -62,6 +66,7 @@ document.querySelector(".create-button")?.addEventListener("click", async () => 
 
 // === Board View Rendering ===
 async function navigateToBoard(id) {
+  console.log("Navigating to board:", id);
   const res = await fetch(`/api/boards/${id}`);
   const data = await res.json();
 
