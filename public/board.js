@@ -9,6 +9,8 @@ const titleEl = document.getElementById("board-title");
 const renameBtn = document.getElementById("rename-btn");
 //const pageTitle = document.getElementById("page-title");
 
+import { generatePersona, buildPersonaPrompt } from "./persona.js";
+
 // ----------------------
 // Sticky Note Creation
 // ----------------------
@@ -45,6 +47,23 @@ function getBoardState() {
   };
 }
 
+function buildGroupedNotes() {
+  const notes = Array.from(document.querySelectorAll(".note")).map(n => ({
+    id: n.dataset.id,
+    content: n.querySelector(".noteContent")?.innerText || n.innerText
+  }));
+
+  const noteMap = Object.fromEntries(notes.map(n => [n.id, n.content]));
+
+  const groups = Array.from(document.querySelectorAll(".group-label")).map(label => {
+    const labelText = label.innerText.trim();
+    const linkedNoteIds = (label.dataset.linkedNotes || "").split(",");
+    const linkedNotes = linkedNoteIds.map(id => noteMap[id]).filter(Boolean);
+    return { label: labelText, notes: linkedNotes };
+  });
+
+  return groups;
+}
 
 
 // Mode switch logic
@@ -442,15 +461,27 @@ document.getElementById("back-to-home").addEventListener("click", () => {
   location.hash = "";
 });
 
-import { generatePersona } from "./persona.js";
-
 document.getElementById("generate-persona").addEventListener("click", async () => {
-  const prompt = "Generate a UX persona based on this axial coding summary...";
+  const groups = buildGroupedNotes();
+  if (groups.length === 0) {
+    alert("No labels or notes found.");
+    return;
+  }
+
   try {
+    const prompt = buildPersonaPrompt(groups);
     const output = await generatePersona(prompt);
-    alert(output); // Or render it in UI
-  } catch (e) {
-    console.error(e);
+
+    output.split("\n\n").forEach((block, i) => {
+      createNote({
+        x: 100 + i * 220,
+        y: 100,
+        text: block.trim()
+      });
+    });
+  } catch (err) {
+    console.error(err);
     alert("Failed to generate persona.");
   }
 });
+

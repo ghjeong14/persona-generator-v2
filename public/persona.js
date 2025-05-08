@@ -13,3 +13,15 @@ export async function generatePersona(prompt) {
     return data.choices?.[0]?.message?.content || "(No output)";
   }
   
+export function buildPersonaPrompt(groups) {
+    let prompt = "Given the following axial coding themes, generate one or more user personas:\n\n";
+    groups.forEach(group => {
+      prompt += `Theme: ${group.label}\nNotes:\n`;
+      group.notes.forEach(note => {
+        prompt += `- ${note}\n`;
+      });
+      prompt += `\n`;
+    });
+    prompt += `Return the personas as descriptions of users with goals, needs, behaviors, and frustrations.`;
+    return prompt;
+  }
