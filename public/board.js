@@ -7,7 +7,7 @@ const addNoteBtn = document.getElementById("addNoteBtn");
 // Rename logic
 const titleEl = document.getElementById("board-title");
 const renameBtn = document.getElementById("rename-btn");
-const pageTitle = document.getElementById("page-title");
+//const pageTitle = document.getElementById("page-title");
 
 // ----------------------
 // Sticky Note Creation
@@ -181,7 +181,7 @@ titleEl.addEventListener("keydown", (e) => {
 
 titleEl.addEventListener("blur", () => {
   titleEl.contentEditable = "false";
-  pageTitle.textContent = titleEl.textContent.trim() || "Untitled Board";
+  document.title = titleEl.textContent.trim() || "Untitled Board";
   saveBoardToServer();
 });
 
@@ -190,24 +190,23 @@ function clearSelection() {
     selected.clear();
 }
 
-function createNote({ x = 150, y = 150, text = "" } = {}) {
+function createNote({ id, x = 150, y = 150, text = "" } = {}) {
   const note = document.createElement("div");
   note.className = "note";
   note.style.left = `${x}px`;
   note.style.top = `${y}px`;
-  note.dataset.id = noteId++;
+  note.dataset.id = id || crypto.randomUUID();
 
   const content = document.createElement("div");
   content.className = "noteContent";
   content.textContent = text;
   note.appendChild(content);
 
-  note.addEventListener("mouseup", saveBoardToServer); // after drag
+  note.addEventListener("mouseup", saveBoardToServer);
   content.addEventListener("blur", () => {
     content.contentEditable = "false";
     saveBoardToServer();
-  });  
-
+  });
 
   board.appendChild(note);
 
@@ -250,19 +249,18 @@ function createNote({ x = 150, y = 150, text = "" } = {}) {
 
   note.addEventListener("dblclick", () => {
     clearSelection();
-    content.contentEditable = "true";
+    content.contentEditable = true;
     content.focus();
     note.classList.add("editing");
   });
 
   content.addEventListener("blur", () => {
-    content.contentEditable = "false";
+    content.contentEditable = false;
     note.classList.remove("editing");
     saveBoardToServer();
   });
-
-  note.dataset.id = crypto.randomUUID(); // or your own generator
 }
+
 
 if (addNoteBtn) {
   addNoteBtn.addEventListener("click", () => {
@@ -349,7 +347,9 @@ function createLabel({ x, y, text, linkedNoteIds }) {
     const linkedNotes = linkedNoteIds
       .map(id => document.querySelector(`.note[data-id="${id}"]`))
       .filter(n => n !== null);  // ✅ prevent null
-  
+    
+    linkedNotes.forEach(n => n.classList.add("linked"));
+
     if (linkedNotes.length === 0) return;  // 💡 optionally skip drag if no notes found
   
     const noteStartPositions = linkedNotes.map(n => ({
@@ -372,6 +372,7 @@ function createLabel({ x, y, text, linkedNoteIds }) {
     const onUp = () => {
       document.removeEventListener("mousemove", onMove);
       document.removeEventListener("mouseup", onUp);
+      linkedNotes.forEach(n => n.classList.remove("linked"));
     };
   
     document.addEventListener("mousemove", onMove);
@@ -417,17 +418,39 @@ function initializeBoard(data, id) {
 
   // Setup title
   titleEl.textContent = data.title || "Untitled Board";
-  pageTitle.textContent = data.title || "Untitled Board";
+  document.title = data.title || "Untitled Board";
 
   // Render board
   clearBoard();
-  data.notes?.forEach(n => createNote(n));
-  data.labels?.forEach(l => createLabel(l));
 
-  // Setup event listeners (lasso, rename, etc.)
-  setupBoardEvents(); 
+  // After notes are rendered
+  const labelQueue = [];
+
+  data.labels?.forEach(labelData => {
+    labelQueue.push(labelData); // Save for now
+  });
+
+  data.notes?.forEach(n => createNote(n)); // Render notes first
+
+  labelQueue.forEach(l => createLabel(l)); // Now create labels
+
 }
 
 window.initializeBoard = initializeBoard;
 
+document.getElementById("back-to-home").addEventListener("click", () => {
+  location.hash = "";
+});
 
+import { generatePersona } from "./persona.js";
+
+document.getElementById("generate-persona").addEventListener("click", async () => {
+  const prompt = "Generate a UX persona based on this axial coding summary...";
+  try {
+    const output = await generatePersona(prompt);
+    alert(output); // Or render it in UI
+  } catch (e) {
+    console.error(e);
+    alert("Failed to generate persona.");
+  }
+});

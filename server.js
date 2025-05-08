@@ -1,7 +1,10 @@
+require('dotenv').config();
+
 const express = require("express");
 const fs = require("fs");
 const path = require("path");
 const app = express();
+const apiKey = process.env.OPENROUTER_API_KEY;
 app.use(express.json());
 
 const boardsDir = path.join(__dirname, "boards");
@@ -81,3 +84,27 @@ app.get("/", (req, res) => {
 
 app.listen(3000, () => console.log("Server running on http://localhost:3000"));
 
+app.post("/api/persona", async (req, res) => {
+    try {
+      const prompt = req.body.prompt;
+  
+      const openRes = await fetch("https://openrouter.ai/api/v1/chat/completions", {
+        method: "POST",
+        headers: {
+          "Authorization": `Bearer ${process.env.OPENROUTER_API_KEY}`,
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify({
+          model: "openai/gpt-4",
+          messages: [{ role: "user", content: prompt }]
+        })
+      });
+  
+      const data = await openRes.json();
+      res.json(data);
+    } catch (err) {
+      console.error(err);
+      res.status(500).send("Failed to generate persona");
+    }
+  });
+  
