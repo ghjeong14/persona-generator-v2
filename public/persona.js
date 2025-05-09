@@ -25,3 +25,6 @@ export function buildPersonaPrompt(groups) {
     prompt += `Return the personas as descriptions of users with goals, needs, behaviors, and frustrations.`;
     return prompt;
   }
+
+  console.log("Sending prompt to OpenRouter:", prompt);
+  console.log("OpenRouter response:", data);

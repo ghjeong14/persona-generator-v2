@@ -19,14 +19,24 @@ const board = document.getElementById("canvas");
 const selected = new Set();
 
 // Saving boards
-function saveBoardToServer() {
+async function saveBoardToServer() {
   const boardId = location.hash.replace("#id=", "");
-  fetch(`/api/boards/${boardId}`, {
-    method: "PUT",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(getBoardState())
-  });
+  try {
+    const res = await fetch(`/api/boards/${boardId}`, {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(getBoardState())
+    });
+
+    if (!res.ok) {
+      console.warn("Save failed with status:", res.status);
+    }
+  } catch (err) {
+    console.error("Save failed:", err);
+    // Optional: Show message in UI
+  }
 }
+
 
 
 function getBoardState() {
@@ -35,7 +45,7 @@ function getBoardState() {
       id: note.dataset.id,
       x: parseFloat(note.style.left),
       y: parseFloat(note.style.top),
-      content: note.querySelector(".content")?.innerText || note.innerText,
+      content: note.querySelector(".noteContent")?.innerText || note.innerText,
     })),
     labels: Array.from(document.querySelectorAll(".group-label")).map(label => ({
       x: parseFloat(label.style.left),
@@ -294,10 +304,8 @@ function setBoardState(state) {
     clearBoard();
     titleEl.textContent = state.title || "Untitled Board";
     document.title = state.title || "Untitled Board";
-    state.notes.forEach(data => createNote(data));
-    if (state.labels) {
-      state.labels.forEach(data => createLabel(data));
-    }   
+    state.notes?.forEach(createNote);
+    state.labels?.forEach(createLabel);
 }
   
 function clearBoard() {
@@ -445,14 +453,7 @@ function initializeBoard(data, id) {
   // After notes are rendered
   const labelQueue = [];
 
-  data.labels?.forEach(labelData => {
-    labelQueue.push(labelData); // Save for now
-  });
-
-  data.notes?.forEach(n => createNote(n)); // Render notes first
-
-  labelQueue.forEach(l => createLabel(l)); // Now create labels
-
+  setBoardState(data);
 }
 
 window.initializeBoard = initializeBoard;
